@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mess Saathi - Find the Best Hostel & Mess Near You</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #f0f9ff;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --border-color: #e5e7eb;
+            --bg-light: #f9fafb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-light);
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 5%;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            letter-spacing: -0.05em;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .login-btn, .signup-btn {
+            text-decoration: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn {
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .signup-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: 2px solid var(--primary-color);
+        }
+
+        .login-btn:hover, .signup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Hero Section */
+        #hero {
+            background: linear-gradient(135deg, rgba(59,130,246,0.9), rgba(59,130,246,0.7)), 
+                        url('https://images.unsplash.com/photo-1588075591242-85da5319d4a4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80') no-repeat center center;
+            background-size: cover;
+            color: white;
+            text-align: center;
+            padding: 6rem 5% 4rem;
+            margin-top: 70px;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 2rem auto 0;
+        }
+
+        .search-container input,
+        .search-container select,
+        .search-container button {
+            padding: 0.875rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .find-btn {
+            background-color: white;
+            color: var(--primary-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .find-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Map & Properties Section */
+        #map-properties {
+            display: flex;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 5%;
+        }
+
+        .map-container {
+            flex: 2;
+        }
+
+        .map-container img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        .available-properties {
+            flex: 1;
+        }
+
+        .property-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .property-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        /* Featured Hostels */
+        #featured-hostels {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 5%;
+            text-align: center;
+        }
+
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .featured-card {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.15);
+        }
+
+        .featured-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .featured-card button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        /* How It Works */
+        #how-it-works {
+            background-color: var(--secondary-color);
+            padding: 4rem 5%;
+            text-align: center;
+        }
+
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .step {
+            width: 30%;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        .step-icon {
+            background-color: var(--primary-color);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* Testimonials */
+        #user-testimonials {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 5%;
+            text-align: center;
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .testimonial-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .user-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Property Listing CTA */
+        #property-listing-cta {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 4rem 5%;
+        }
+
+        .cta-buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .cta-buttons button {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .list-property-btn {
+            background-color: white;
+            color: var(--primary-color);
+        }
+
+        .learn-more-btn {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .cta-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Footer */
+        footer {
+            background-color: #111827;
+            color: white;
+            padding: 4rem 5%;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .footer-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            font-size: 1.125rem;
+        }
+
+        .social-icons a {
+            color: white;
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section ul li a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section ul li a:hover {
+            color: var(--primary-color);
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #374151;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-container,
+            #map-properties,
+            .featured-grid,
+            .steps-container,
+            .testimonial-grid,
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            nav ul {
+                display: none; /* Simple mobile menu handling */
+            }
+
+            .featured-card, 
+            .testimonial-card, 
+            .step, 
+            .footer-section {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">Mess Saathi</div>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#listings">Listings</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="auth-buttons">
+                <a href="#login" class="login-btn">Login</a>
+                <a href="#signup" class="signup-btn">Sign Up</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero">
+            <div class="hero-content">
+                <h1>Find the Best Hostel & Mess Near You</h1>
+                <p>Discover comfortable accommodations that feel like home</p>
+                <div class="search-container">
+                    <input type="text" placeholder="Enter location" class="location-input">
+                    <select class="food-select">
+                        <option>With Food</option>
+                        <option>Without Food</option>
+                    </select>
+                    <select class="price-select">
+                        <option>Price Range</option>
+                        <option>$0 - $200</option>
+                        <option>$200 - $400</option>
+                        <option>$400+</option>
+                    </select>
+                    <button class="find-btn">Find Now</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="map-properties">
+            <div class="map-container">
+                <div id="map" style="width: 100%; height: 400px; border-radius: 12px;"></div>
+            </div>
+            <div class="available-properties">
+                <div class="property-card">
+                    <img src="https://via.placeholder.com/400x300?text=Student+Haven+Hostel" alt="Student Haven Hostel">
+                    <div class="property-details">
+                        <h3>Student Haven Hostel</h3>
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                            <span>(6)</span>
+                        </div>
+                        <p>$500/month</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="featured-hostels">
+            <h2>Featured Hostels & Messes</h2>
+            <div class="featured-grid">
+                <div class="featured-card">
+                    <img src="https://via.placeholder.com/400x300?text=Comfort+Zone+Hostel" alt="Comfort Zone Hostel">
+                    <h3>Comfort Zone Hostel</h3>
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                        <span>(45)</span>
+                    </div>
+                    <p>$250/month</p>
+                    <button>View Details</button>
+                </div>
+                <div class="featured-card">
+                    <img src="https://via.placeholder.com/400x300?text=Student's+Delight+Mess" alt="Student's Delight Mess">
+                    <h3>Student's Delight Mess</h3>
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <span>(40)</span>
+                    </div>
+                    <p>$180/month</p>
+                    <button>View Details</button>
+                </div>
+                <div class="featured-card">
+                    <img src="https://via.placeholder.com/400x300?text=Campus+View+Hostel" alt="Campus View Hostel">
+                    <h3>Campus View Hostel</h3>
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <span>(50)</span>
+                    </div>
+                    <p>$300/month</p>
+                    <button>View Details</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-icon">1</div>
+                    <h3>Select Location</h3>
+                    <p>Choose your preferred area or let us detect your location</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">2</div>
+                    <h3>Compare Options</h3>
+                    <p>Browse through various options and compare facilities</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">3</div>
+                    <h3>Book Easily</h3>
+                    <p>Select your choice and book with just a few clicks</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="user-testimonials">
+            <h2>What Our Users Say</h2>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <p>"Found my perfect hostel with minimal effort. The map feature made it so easy to find a place near my university!"</p>
+                    <div class="user-info">
+                        <img src="https://via.placeholder.com/50" alt="Sarah Johnson">
+                        <span>Sarah Johnson</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"Great platform! The detailed filters helped me find a mess that perfectly matched my requirements."</p>
+                    <div class="user-info">
+                        <img src="https://via.placeholder.com/50" alt="Mike Chen">
+                        <span>Mike Chen</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"The virtual tours and detailed photos helped me make an informed decision without visiting in person."</p>
+                    <div class="user-info">
+                        <img src="https://via.placeholder.com/50" alt="Emily Wong">
+                        <span>Emily Wong</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="property-listing-cta">
+            <div class="cta-content">
+                <h2>Own a Hostel or Mess?</h2>
+                <p>List your property and reach thousands of potential customers</p>
+                <div class="cta-buttons">
+                    <button class="list-property-btn">List Your Property</button>
+                    <button class="learn-more-btn">Learn More</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Mess Saathi</h4>
+                <p>Making accommodation search and booking easy.</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#blog">Blog</a></li>
+                    <li><a href="#faqs">FAQs</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#help">Help Center</a></li>
+                    <li><a href="#privacy">Privacy Policy</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                    <li><a href="#legal">Legal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact Us</h4>
+                <p>+1 234 567 8900</p>
+                <p>contact@hostelhub.com</p>
+                <p>123 Business Avenue, NYC</p>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>© 2025 Mess Saathi. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add hover effects to featured hostel cards
+            const featuredCards = document.querySelectorAll('.featured-card');
+            featuredCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'scale(1.05)';
+                    card.style.transition = 'transform 0.3s ease';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'scale(1)';
+                });
+            });
+
+            // Basic search functionality (just a placeholder)
+            const findNowBtn = document.querySelector('.find-btn');
+            findNowBtn.addEventListener('click', () => {
+                const location = document.querySelector('.location-input').value;
+                const foodOption = document.querySelector('.food-select').value;
+                const priceRange = document.querySelector('.price-select').value;
+
+                if (location) {
+                    alert(`Searching for hostels in ${location} with ${foodOption} options in ${priceRange} price range`);
+                } else {
+                    alert('Please enter a location');
+                }
+            });
+
+            // Initialize the map
+            const map = L.map('map').setView([51.505, -0.09], 13); // Default location: London
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add a marker (example)
+            L.marker([51.505, -0.09]).addTo(map)
+                .bindPopup('Default Location: London')
+                .openPopup();
+        });
+    </script>
+</body>
+</html>
